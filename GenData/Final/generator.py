@@ -238,7 +238,7 @@ class Generator:
         fig.show()
 
     # Export Functions
-    def save_grid(self, df, base_filename="v2_grid"):
+    def grid_to_json(self, df, base_filename="v2_grid"):
         """
         Saves the grid DataFrame to a JSON file with an auto-incremented name to avoid overwriting.
 
@@ -257,7 +257,7 @@ class Generator:
         df.to_json(filename, index=False)
         print(f"File saved as: {filename}")
 
-    def save_gaussians_grid(self, df, base_filename="gaussians_grid", output_folder="gaussian_grids"):
+    def gaussians_grid_to_json(self, df, base_filename="gaussians_grid", output_folder="gaussian_grids"):
         """
         Saves the Gaussian intensity DataFrame to a uniquely named JSON file.
         """
