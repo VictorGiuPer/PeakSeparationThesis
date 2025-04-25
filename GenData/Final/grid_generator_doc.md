@@ -7,12 +7,24 @@ The `Generator` class simulates LC-MS data by generating irregular retention tim
 ## Initialization
 
 ```python
-Generator(
-    rt_start, rt_end, rt_steps, rt_variation,
-    mz_start, mz_end, mz_min_steps, mz_max_steps, mz_variation
-)
+Generator()
 
 ```
+
+Empty initialization — Generator object is stateless until method is called.
+
+## Grid Generation
+
+generate_grid() -> pd.DataFrame
+
+Generates an irregular RT/MZ sampling grid.
+
+```python
+grid = generator.generate_grid(rt_start=10, rt_end=15, rt_steps=100, rt_variation=0.1,
+    mz_start=150, mz_end=160, mz_min_steps=990, mz_max_steps=1010, mz_variation=0.1
+)
+```
+
 **Parameters**:
 
 rt_start / rt_end: Range of retention times.
@@ -26,16 +38,6 @@ mz_start / mz_end: Range of m/z values.
 mz_min_steps / mz_max_steps: Range of number of m/z steps per RT.
 
 mz_variation: Max variation in m/z step size (relative).
-
-## Grid Generation
-
-generate_grid() -> pd.DataFrame
-
-Generates an irregular RT/MZ sampling grid.
-
-```python
-grid = generator.generate_grid()
-```
 
 **Returns:**
 
@@ -112,13 +114,12 @@ peak_params = [
 from generator import Generator
 
 # Initialize generator
-gen = Generator(
-    rt_start=10, rt_end=15, rt_steps=100, rt_variation=0.1,
-    mz_start=150, mz_end=160, mz_min_steps=990, mz_max_steps=1010, mz_variation=0.1
-)
+gen = Generator()
 
 # Generate RT/MZ grid
-grid = gen.generate_grid()
+grid = gen.generate_grid(rt_start=10, rt_end=15, rt_steps=100, rt_variation=0.1,
+    mz_start=150, mz_end=160, mz_min_steps=990, mz_max_steps=1010, mz_variation=0.1
+)
 
 # Apply Gaussian peaks
 intensity_df = gen.generate_gaussians(grid, peak_params)

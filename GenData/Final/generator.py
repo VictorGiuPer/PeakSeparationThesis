@@ -1,31 +1,33 @@
+import os
 import numpy as np
 import pandas as pd
+# Plotting Imports
+import matplotlib.pyplot as plt
 import plotly.express as px
-import os
 # Gaussian Generation Imports
 from scipy.interpolate import interp1d
-import matplotlib.pyplot as plt
+# MS Imports
+from pyopenms import MSExperiment, MzMLFile, MSSpectrum
 
 
 class Generator:
     """
     A class to generate retention time (RT) and mass-to-charge (MZ) sampling grids
     with controlled random variations.
-
-    Parameters:
-        rt_start (float): Start of the RT range.
-        rt_end (float): End of the RT range.
-        rt_steps (int): Number of RT sampling points.
-        rt_variation (float): Max variation applied to RT step sizes (relative).
-        mz_start (float): Start of the MZ range.
-        mz_end (float): End of the MZ range.
-        mz_min_steps (int): Minimum number of MZ steps per RT.
-        mz_max_steps (int): Maximum number of MZ steps per RT.
-        mz_variation (float): Max variation applied to MZ step sizes (relative).
     """
-    def __init__(self, rt_start, rt_end, rt_steps, rt_variation,
-                 mz_start, mz_end, mz_min_steps, mz_max_steps, mz_variation):
+    def __init__(self):
+        """
+        Empty initialization — Generator object is stateless until method is called.
+        """
+        pass
 
+    # Grid Generation
+    def generate_grid(self, 
+                      rt_start, rt_end, rt_steps, rt_variation,
+                      mz_start, mz_end, mz_min_steps, mz_max_steps, mz_variation) -> pd.DataFrame:
+        """
+        Public method. Generates a synthetic RT-MZ grid with irregular spacing.
+        """
         # Retention time configuration
         self.rt_start = rt_start
         self.rt_end = rt_end
@@ -39,11 +41,7 @@ class Generator:
         self.mz_max_steps = mz_max_steps
         self.mz_variation = mz_variation
 
-    # Grid Generation
-    def generate_grid(self) -> pd.DataFrame:
-        """
-        Public method. Generates a synthetic RT-MZ grid with irregular spacing.
-        """
+
         rt_points = self._rt_variable_linspace()
         mz_column = [self._mz_variable_linspace() for _ in rt_points]
         return pd.DataFrame({"rt": rt_points, "mz": mz_column})
@@ -238,7 +236,7 @@ class Generator:
         fig.show()
 
     # Export Functions
-    def grid_to_json(self, df, base_filename="v2_grid"):
+    def grid_to_json(self, df, base_filename="gen_grid"):
         """
         Saves the grid DataFrame to a JSON file with an auto-incremented name to avoid overwriting.
 
@@ -257,19 +255,55 @@ class Generator:
         df.to_json(filename, index=False)
         print(f"File saved as: {filename}")
 
-    def gaussians_grid_to_json(self, df, base_filename="gaussians_grid", output_folder="gaussian_grids"):
+    def gaussians_grid_to_json(self, df, base_filename="gen_gaussians_grid"):
         """
         Saves the Gaussian intensity DataFrame to a uniquely named JSON file.
         """
-        os.makedirs(output_folder, exist_ok=True)
         filename = f"{base_filename}.json"
-        filepath = os.path.join(output_folder, filename)
         counter = 1
 
-        while os.path.exists(filepath):
+        # Ensure filename is unique
+        while os.path.exists(filename):
             filename = f"{base_filename}_{counter}.json"
-            filepath = os.path.join(output_folder, filename)
             counter += 1
 
-        df.to_json(filepath, index=False)
+        # Save the DataFrame
+        df.to_json(filename, index=False)
+        print(f"File saved as: {filename}")
+    
+    def gaussians_grid_to_mzml(self, df, output_path_base="output.mzML"):
+        df_prepped = df.rename(columns={
+        "rt": "RT",
+        "mz": "mzarray",
+        "intensities": "intarray"
+        })
+
+        # Handle file name bumping
+        base, ext = os.path.splitext(output_path_base)
+        filepath = output_path_base
+        count = 1
+        while os.path.exists(filepath):
+            output_path = f"{base}_{count}{ext}"
+            count += 1
+
+        print(f"Saving to: {filepath}")
+
+
+        exp = MSExperiment()
+
+        for i, row in df_prepped.iterrows():
+            spectrum = MSSpectrum()
+            spectrum.setRT(row["RT"])  # in seconds
+            spectrum.setMSLevel(1)
+            spectrum.set_peaks([row["mzarray"], row["intarray"]])  # m/z and intensity arrays
+            exp.addSpectrum(spectrum)
+        MzMLFile().store(filepath, exp)
         print(f"File saved as: {filepath}")
+
+    def load_mzml(filepath):
+        experiment = MSExperiment()
+        MzMLFile().load(filepath, experiment)
+        data_loaded = experiment.get_df()
+        print(data_loaded.head())
+        return data_loaded
+

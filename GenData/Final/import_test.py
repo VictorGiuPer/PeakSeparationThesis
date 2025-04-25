@@ -1,11 +1,11 @@
 from generator import Generator
 
 
-gg = Generator(rt_start=10, rt_end=15, rt_steps=100, rt_variation=0.1,
+gg = Generator()
+
+df = gg.generate_grid(rt_start=10, rt_end=15, rt_steps=100, rt_variation=0.1,
     mz_start=150, mz_end=160, mz_min_steps=990, mz_max_steps=1010, mz_variation=0.1
 )
-
-df = gg.generate_grid()
 
 # Define peak
 peak_params = [
@@ -19,4 +19,4 @@ peak_params = [
 
 df2 = gg.generate_gaussians(grid=df, peak_params=peak_params)
 
-gg.plot_gaussians_grid(df2)
+gg.gaussians_grid_to_json(df2)
